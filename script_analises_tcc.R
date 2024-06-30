@@ -43,10 +43,6 @@ tabela$"valor_prod_dep" <- round(as.numeric(tabela$valor_prod) * as.numeric(tabe
 coco_da_baia <- as.data.frame(tabela[12,]) # salvar a informação
 tabela <- tabela[-12,] # remover
 
-#coco_da_baia <- as.data.frame(tabela_2022_dep[9,]) # salvar a informação
-#names(coco_da_baia) <- names(tabela_2022_dep)
-#tabela_2022_dep <- tabela_2022_dep[-9,] # remover
-
 # adicionar total ao final da tabela
 
 totais <- c("Totais", "-",
@@ -63,12 +59,11 @@ write_xlsx(coco_da_baia, "prod_2022_coco.xlsx")
 
 
 
-# Gráficos ----------------------------------------------------------------
-
-# gráfico de linha para série temporal (11 anos) de área plantada total de
-# produtos e dependentes e não-dependentes
+# Objetivo: obter gráfico de linha para série temporal (11 anos) de área plantada total de
+# produtos dependentes e não-dependentes
 
 ### obter área plantada total
+# tabela era dados_area_plant transposta
 
 # filtrar tabela pelas linhas que contém os anos
 anos <- seq(2012,2022, 1)
