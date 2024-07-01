@@ -64,12 +64,45 @@ write_xlsx(tabela, "prod_2022.xlsx")
 
 # Gráfico -----------------------------------------------------------------
 
+library(ggplot2)
+
 # obter uma tabela que contenha os cultivos nas linhas, uma coluna para cada ano
 # e os valores correspondentes ao total multiplicado pela taxa de dependência preenchendo
 # a tabela
 
 # figuras: gráfico de linhas, com anos no eixo X e área no eixo Y
-# agrupar por taxa de dependência
 
 
+area_plantada_dep <- filter(dados_area_plant, `Produto das lavouras temporárias e permanentes` %in% cult_depend) %>% 
+  merge(y = taxa_dep,
+        by.x = "Produto das lavouras temporárias e permanentes",
+        by.y = "Cultivo")
+
+# Retirando dados ausentes (pois não serão plotados):
+area_plantada_dep <- area_plantada_dep %>%
+  filter(!is.na(Ano) & !is.na(Valor))
+
+# Agrupar por taxa de dependência:
+td_baixa <- filter(area_plantada_dep, TD < 0.1)
+td_modesta <- filter(area_plantada_dep, TD >= 0.1 & TD < 0.4)
+td_alta <- filter(area_plantada_dep, TD >= 0.4 & TD < 0.9)
+td_essencial <- filter(area_plantada_dep, TD >= 0.9)
+
+
+fazer_grafico <- function(tabela, titulo){
+  p <- ggplot(
+    tabela,
+    mapping = aes(x = Ano, y = Valor, color = `Produto das lavouras temporárias e permanentes`,
+                  group = `Produto das lavouras temporárias e permanentes`)
+  ) +
+    labs(title = titulo,
+         y = "Área (ha)") +
+    geom_line()
+  print(p)
+}
+
+fazer_grafico(td_baixa, "Área plantada de cultivos com baixa dependência em polinizadores")
+fazer_grafico(td_modesta, "Área plantada de cultivos com modesta dependência em polinizadores")
+fazer_grafico(td_alta, "Área plantada de cultivos com alta dependência em polinizadores")
+fazer_grafico(td_essencial, "Área plantada de cultivos com essencial dependência em polinizadores")
 
