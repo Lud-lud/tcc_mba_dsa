@@ -106,3 +106,51 @@ fazer_grafico(td_modesta, "Área plantada de cultivos com modesta dependência e
 fazer_grafico(td_alta, "Área plantada de cultivos com alta dependência em polinizadores")
 fazer_grafico(td_essencial, "Área plantada de cultivos com essencial dependência em polinizadores")
 
+
+
+# Mapa --------------------------------------------------------------------
+
+# API para obtenção de dados do IBGE
+
+library("sidrar")
+
+td_cod_cultivos <- read_excel("td_cod_cultivos.xlsx")
+codigos_cultivos <- td_cod_cultivos$Codigo
+
+# Dividir requisição de dados em partes para não ultrapassar o limite de dados do sistema:
+num_parts <- 6
+part_length <- ceiling(length(codigos_cultivos) / num_parts)
+codigo_cultivos_parts <- split(codigos_cultivos, ceiling(seq_along(codigos_cultivos) / part_length))
+
+dados <- data.frame()
+
+info_sidra(5457, wb = FALSE) # visualizar informações da tabela 5457
+
+for (part in codigo_cultivos_parts){
+  part_str <- paste(part, collapse = ',')
+  result <- get_sidra(
+    x = 5457,
+    geo = "City",
+    period = "2022",
+    variable = 1008331,
+    classific = "c782",
+    category = list(part_str)
+  )
+  dados <- rbind(dados, result)
+}
+
+glimpse(dados)
+dados_ap <- select(dados, "Município (Código)", "Município",
+                   "Produto das lavouras temporárias e permanentes (Código)",
+                   "Produto das lavouras temporárias e permanentes", "Valor")
+
+dados_ap_t <- dados_ap %>% 
+  pivot_wider(
+    names_from = "Produto das lavouras temporárias e permanentes",
+    values_from = "Valor"
+  )
+
+
+area_plant_dep_mun <- dados_ap_t %>% 
+  group_by(`Município (Código)`) %>% 
+  summarise(area_total_dep = sum(!is.na(dados_ap_t[,c(4:39)])))
