@@ -151,5 +151,6 @@ dados_ap_t <- dados_ap %>%
     values_from = "Valor"
   )
 
+dados_ap_t$area_plant_perc <- rowSums(dados_ap_t[,c(3:38)], na.rm = T)
 
-
+write_xlsx(dados_ap_t, "area_perc_cult_dep.xlsx")
