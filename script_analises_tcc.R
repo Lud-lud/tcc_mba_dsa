@@ -24,8 +24,8 @@ dados_quant_prod <- sidrar::get_sidra(api = cod_quant_prod)
 cod_valor_prod <- "/t/5457/n1/all/v/215/p/last%2010/c782/all"
 dados_valor_prod <- sidrar::get_sidra(api = cod_valor_prod)
 
-taxa_dep <- read_excel("dados_TD_v1.xlsx") # abrir tabela com cultivos dependentes de polinizadores e respectivas taxas de dependência
-cult_depend <- taxa_dep$Cultivo # obter nomes dos cultivos
+taxa_dep <- read_excel("cultivos_info.xlsx") # abrir tabela com cultivos dependentes de polinizadores e respectivas taxas de dependência
+cult_depend <- taxa_dep$Produto # obter nomes dos cultivos
 
 lista_dados <- list(dados_area_plant, dados_quant_prod, dados_valor_prod) # input do loop
 lista_dados_final <- list() # output do loop
@@ -35,20 +35,24 @@ for (tabela in lista_dados){
   lista_dados_final <- append(lista_dados_final, list(dados_final))
 }
 
+# Criar tabela final:
 tabela <- lista_dados_final[[1]][,c("Produto das lavouras temporárias e permanentes", "Valor")] %>%
   cbind(lista_dados_final[[2]][,"Valor"], lista_dados_final[[3]][,"Valor"], taxa_dep$TD)
 
+# Renomear colunas:
 colnames(tabela) <- c("produto", "area", "quant_prod", "valor_prod", "TD")
 
+# Reordenar colunas:
 tabela <- tabela %>% select(produto, TD, everything())
 
 
-# adicionar quantidade produzida e valor de produção associados à polinização (assumindo que há polinização adequada)
+# Adicionar quantidade produzida e valor de produção associados à polinização
+# (assumindo que há polinização adequada):
 tabela$"quant_prod_dep" <- round(as.numeric(tabela$quant_prod) * as.numeric(tabela$TD), 0)
 tabela$"valor_prod_dep" <- round(as.numeric(tabela$valor_prod) * as.numeric(tabela$TD), 0)
 
 
-# adicionar total ao final da tabela
+# Adicionar informação de totais ao final da tabela:
 
 totais <- c("Totais", "-",
             sum(as.numeric(tabela$area), na.rm = T),
@@ -59,6 +63,7 @@ totais <- c("Totais", "-",
 
 tabela <- rbind(tabela, totais)
 
+# Salvar tabela:
 write_xlsx(tabela, "prod_2022.xlsx")
 
 
@@ -66,17 +71,13 @@ write_xlsx(tabela, "prod_2022.xlsx")
 
 library(ggplot2)
 
-# obter uma tabela que contenha os cultivos nas linhas, uma coluna para cada ano
-# e os valores correspondentes ao total multiplicado pela taxa de dependência preenchendo
-# a tabela
-
-# figuras: gráfico de linhas, com anos no eixo X e área no eixo Y
+# Objetivo: obter gráfico de linhas, com anos no eixo X e área plantada no eixo Y.
 
 
 area_plantada_dep <- filter(dados_area_plant, `Produto das lavouras temporárias e permanentes` %in% cult_depend) %>% 
   merge(y = taxa_dep,
         by.x = "Produto das lavouras temporárias e permanentes",
-        by.y = "Cultivo")
+        by.y = "Produto")
 
 # Retirando dados ausentes (pois não serão plotados):
 area_plantada_dep <- area_plantada_dep %>%
@@ -90,21 +91,22 @@ td_essencial <- filter(area_plantada_dep, TD >= 0.9)
 
 
 fazer_grafico <- function(tabela, titulo){
+  colnames(tabela)[1] <- "Produto"
   p <- ggplot(
     tabela,
-    mapping = aes(x = Ano, y = Valor, color = `Produto das lavouras temporárias e permanentes`,
-                  group = `Produto das lavouras temporárias e permanentes`)
+    mapping = aes(x = Ano, y = Valor, color = Produto,
+                  group = Produto)
   ) +
     labs(title = titulo,
-         y = "Área (ha)") +
+         y = "Área plantada ou destinada à colheita (ha)") +
     geom_line()
   print(p)
 }
 
-fazer_grafico(td_baixa, "Área plantada de cultivos com baixa dependência em polinizadores")
-fazer_grafico(td_modesta, "Área plantada de cultivos com modesta dependência em polinizadores")
-fazer_grafico(td_alta, "Área plantada de cultivos com alta dependência em polinizadores")
-fazer_grafico(td_essencial, "Área plantada de cultivos com essencial dependência em polinizadores")
+fazer_grafico(td_baixa, "Taxa de dependência em polinizadores: baixa")
+fazer_grafico(td_modesta, "Taxa de dependência em polinizadores: modesta")
+fazer_grafico(td_alta, "Taxa de dependência em polinizadores: alta")
+fazer_grafico(td_essencial, "Taxa de dependência em polinizadores: essencial")
 
 
 
@@ -114,8 +116,7 @@ fazer_grafico(td_essencial, "Área plantada de cultivos com essencial dependênc
 
 library("sidrar")
 
-td_cod_cultivos <- read_excel("td_cod_cultivos.xlsx")
-codigos_cultivos <- td_cod_cultivos$Codigo
+codigos_cultivos <- taxa_dep$Codigo
 
 # Dividir requisição de dados em partes para não ultrapassar o limite de dados do sistema:
 num_parts <- 6
