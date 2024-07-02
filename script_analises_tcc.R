@@ -146,11 +146,10 @@ dados_ap <- select(dados, "Município (Código)", "Município",
 
 dados_ap_t <- dados_ap %>% 
   pivot_wider(
+    id_cols = c("Município (Código)", "Município"),
     names_from = "Produto das lavouras temporárias e permanentes",
     values_from = "Valor"
   )
 
 
-area_plant_dep_mun <- dados_ap_t %>% 
-  group_by(`Município (Código)`) %>% 
-  summarise(area_total_dep = sum(!is.na(dados_ap_t[,c(4:39)])))
+
